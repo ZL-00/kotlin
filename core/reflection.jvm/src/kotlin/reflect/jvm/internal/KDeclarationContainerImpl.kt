@@ -55,7 +55,7 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
                 createProperty(descriptor)
 
             override fun visitFunctionDescriptor(descriptor: FunctionDescriptor, data: Unit): KCallableImpl<*> =
-                KFunctionImpl(computeDeclarationContainer(descriptor), descriptor)
+                KFunctionImpl(this@KDeclarationContainerImpl, descriptor)
 
             override fun visitConstructorDescriptor(descriptor: ConstructorDescriptor, data: Unit): KCallableImpl<*> =
                 throw IllegalStateException("No constructors should appear in this scope: $descriptor")
@@ -80,32 +80,21 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
     private fun createProperty(descriptor: PropertyDescriptor): KPropertyImpl<*> {
         val receiverCount = (descriptor.dispatchReceiverParameter?.let { 1 } ?: 0) +
                 (descriptor.extensionReceiverParameter?.let { 1 } ?: 0)
-        val container = computeDeclarationContainer(descriptor)
 
         when {
             descriptor.isVar -> when (receiverCount) {
-                0 -> return KMutableProperty0Impl<Any?>(container, descriptor)
-                1 -> return KMutableProperty1Impl<Any?, Any?>(container, descriptor)
-                2 -> return KMutableProperty2Impl<Any?, Any?, Any?>(container, descriptor)
+                0 -> return KMutableProperty0Impl<Any?>(this, descriptor)
+                1 -> return KMutableProperty1Impl<Any?, Any?>(this, descriptor)
+                2 -> return KMutableProperty2Impl<Any?, Any?, Any?>(this, descriptor)
             }
             else -> when (receiverCount) {
-                0 -> return KProperty0Impl<Any?>(container, descriptor)
-                1 -> return KProperty1Impl<Any?, Any?>(container, descriptor)
-                2 -> return KProperty2Impl<Any?, Any?, Any?>(container, descriptor)
+                0 -> return KProperty0Impl<Any?>(this, descriptor)
+                1 -> return KProperty1Impl<Any?, Any?>(this, descriptor)
+                2 -> return KProperty2Impl<Any?, Any?, Any?>(this, descriptor)
             }
         }
 
         throw KotlinReflectionInternalError("Unsupported property: $descriptor")
-    }
-
-    private fun computeDeclarationContainer(descriptor: CallableMemberDescriptor): KDeclarationContainerImpl {
-        val receiverParameter = descriptor.dispatchReceiverParameter ?: return this
-        val receiverValue = receiverParameter.value
-        val receiverDescriptor = receiverValue.type.constructor.declarationDescriptor
-        if (receiverDescriptor !is ClassDescriptor) {
-            throw KotlinReflectionInternalError("Receiver parameter descriptor should be a class: $receiverDescriptor ($descriptor)")
-        }
-        return receiverDescriptor.toJavaClass()?.kotlin as KClassImpl<*>? ?: this
     }
 
     fun findPropertyDescriptor(name: String, signature: String): PropertyDescriptor {
