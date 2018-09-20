@@ -300,15 +300,19 @@ public abstract class ClassBodyCodegen extends MemberCodegen<KtPureClassOrObject
                         Iterator<ParameterDescriptor> myParametersIterator = myParameters.iterator();
                         Iterator<ParameterDescriptor> toParametersIterator = toParameters.iterator();
                         for (; myArgI < myArgTypes.length; myArgI++, toArgI++) {
-                            Type argType = myArgTypes[myArgI];
-                            KotlinType argKotlinType = myParametersIterator.next().getType();
+                            Type myArgType = myArgTypes[myArgI];
+                            Type toArgType = toArgTypes[toArgI];
 
-                            Type originalArgType = toArgTypes[toArgI];
-                            KotlinType originalArgKotlinType = toParametersIterator.next().getType();
+                            KotlinType myArgKotlinType = null;
+                            KotlinType toArgKotlinType = null;
+                            if (myParametersIterator.hasNext()) {
+                                myArgKotlinType = myParametersIterator.next().getType();
+                                toArgKotlinType = toParametersIterator.next().getType();
+                            }
 
-                            StackValue.local(argVar, argType, argKotlinType)
-                                    .put(originalArgType, originalArgKotlinType, iv);
-                            argVar += argType.getSize();
+                            StackValue.local(argVar, myArgType, myArgKotlinType)
+                                    .put(toArgType, toArgKotlinType, iv);
+                            argVar += myArgType.getSize();
                         }
 
                         assert toArgI == toArgTypes.length :
